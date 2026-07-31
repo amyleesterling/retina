@@ -218,7 +218,7 @@
       imaged in an electron microscope and reconstructed. This plays one back on the other.</p>
       <div class="rule"></div>
       <p class="meta">
-        <span><b>202</b> cells</span>
+        <span><b>202</b> imaged cells</span>
         <span><b>64</b> direction selective</span>
         <span><b>8</b> bar directions</span>
         <span><b>5</b> recording fields</span>
@@ -268,9 +268,16 @@
   <h2>How the direction gets computed</h2>
   <p>Direction selectivity is not made in the brain. It is already finished by the time
   the signal leaves the eye, and the cell most responsible is the starburst amacrine
-  cell. There are 24 of them in this reconstruction. Their dendrites radiate from the
-  cell body like a firework, and neighbouring cells barely overlap: they divide the
-  sheet between them.</p>
+  cell. Its dendrites radiate from the cell body like a firework, and the direction
+  computation happens along those individual branches.</p>
+  <p><b>The 24 shown below are a sample, not the population.</b> They are the starburst
+  cells that fall inside the calcium imaged set, and the reconstruction holds several
+  hundred more. That matters for what this film can and cannot be used to claim: the
+  real sheet is far denser than what you are about to watch, and any impression you get
+  here about how much neighbouring starburst cells overlap is an artefact of my
+  sampling rather than a fact about retina. What survives the sampling is the depth,
+  because where a cell puts its dendrites does not depend on which other cells I
+  happened to include.</p>
 
   <figure>
     <div class="holoframe">
@@ -279,12 +286,14 @@
              controls playsinline preload="metadata" loop
              aria-label="Twenty four starburst amacrine cells laid into place one at a time, then turned to show they all occupy one thin layer"></video>
     </div>
-    <figcaption>The 24 starburst amacrine cells are laid in one at a time, each in its
-    own colour, so you can watch the sheet get covered rather than just see it covered.
-    Then the whole thing turns on its side. <b>Every arbor collapses into one thin
-    band</b>, with the cell bodies sitting above it on short stalks. That flatness is
-    the point: two cells can only form a synapse where both of them are, so committing
-    to a depth is most of what wiring a retina means.</figcaption>
+    <figcaption>The 24 sampled starburst amacrine cells are laid in one at a time, each
+    in its own colour, so you can see the individual arbors before they pile up. Then
+    the whole thing turns on its side. <b>Every arbor collapses into one thin band</b>,
+    with the cell bodies sitting above it on short stalks. That flatness is the point:
+    two cells can only form a synapse where both of them are, so committing to a depth
+    is most of what wiring a retina means. It is also the claim here that a partial
+    sample cannot break, since adding the missing cells can only make the band more
+    crowded, not move it.</figcaption>
   </figure>
 
   <div class="note warm">The turn is a real rotation of the reconstruction, not a
@@ -318,6 +327,11 @@
   <p>What worked was the crudest option: <b>cell body coordinates</b>. A soma is a large
   object in a fixed place, and both experiments recorded where they are. That match is
   the reason there is anything on this page.</p>
+
+  <p>Everything on this page is drawn from that intersection, which is much smaller than
+  either experiment. The reconstruction contains far more cells than were imaged, and
+  the recordings cover cells that have not been reconstructed. Any count below is a
+  count of <b>the overlap</b>, and should never be read as a count of the dataset.</p>
 
   <div class="stats">
     <div class="stat"><div class="v">202</div><div class="k">cells rendered</div></div>
