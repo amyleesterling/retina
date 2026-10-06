@@ -197,6 +197,46 @@
   a:hover { text-decoration: underline; }
   footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--line);
            color: var(--faint); font-size: 14px; }
+
+  /* ---- bipolar cells: the film and the live model ------------------------------
+     The model sits a little wider than the text column, like a plate in a book.
+     It loads only when it comes near the screen, and shows the render's own frame
+     until the cells are in. */
+  figure.wide { width: min(1120px, calc(100vw - 32px)); margin-left: 50%; transform: translateX(-50%); }
+  .bpstage { position: relative; aspect-ratio: 2 / 1; border-radius: 8px; overflow: hidden;
+             background: #000; border: 1px solid var(--line); }
+  @media (max-width: 620px) { .bpstage { aspect-ratio: auto; height: 70vh; } }
+  .bpstage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+                    touch-action: none; cursor: grab; opacity: 0; transition: opacity .6s ease; }
+  .bpstage canvas:active { cursor: grabbing; }
+  .bpstage.live canvas { opacity: 1; }
+  .bpph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+          transition: opacity .6s ease; }
+  .bpstage.live .bpph { opacity: 0; pointer-events: none; }
+  .bpload { position: absolute; left: 14px; bottom: 12px; font-size: 12px; letter-spacing: .1em;
+            text-transform: uppercase; color: rgba(170,200,235,.9); text-shadow: 0 1px 8px #000; }
+  .bpstage.live .bpload { display: none; }
+  .bptip { position: absolute; pointer-events: none; z-index: 2; padding: 6px 10px; border-radius: 3px;
+           font-size: 13px; line-height: 1.35; white-space: nowrap; color: var(--ink);
+           background: rgba(8,14,26,.88); border: 1px solid rgba(122,186,246,.3);
+           box-shadow: 0 6px 20px rgba(0,0,0,.5); transform: translate(14px, 14px); display: none; }
+  .bptip b { font-weight: 500; }
+  .bptip span { color: var(--dim); }
+  .bpbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; margin: 12px 0 0; }
+  .bpseg { display: inline-flex; border: 1px solid rgba(88,148,238,.3); border-radius: 4px; overflow: hidden; }
+  .bpseg button, .bpreset { font: inherit; font-size: 12px; letter-spacing: .08em; text-transform: uppercase;
+                            color: var(--dim); background: transparent; border: 0; padding: 6px 11px; cursor: pointer; }
+  .bpseg button[aria-pressed="true"] { color: var(--ink); background: rgba(62,150,240,.18); }
+  .bpreset { border: 1px solid var(--line); border-radius: 4px; margin-left: auto; }
+  .bpreset:hover, .bpseg button:hover { color: var(--ink); }
+  .bpchips { display: flex; flex-wrap: wrap; gap: 6px 14px; width: 100%; font-size: 12.5px; color: var(--dim); }
+  .bpchips button { font: inherit; color: inherit; background: none; border: 0; padding: 2px 0; cursor: pointer;
+                    display: inline-flex; align-items: center; gap: 6px; }
+  .bpchips button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .bpchips button em { font-style: normal; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .bpchips button[aria-pressed="false"] { opacity: .35; }
+  .bpchips button:hover { color: var(--ink); }
+  @media (prefers-reduced-motion: reduce) { .bpstage canvas, .bpph { transition: none; } }
   @media (prefers-reduced-motion: reduce) {
     .holoframe video, .heropanel, .hud, .hud i, h2::before { transition: none; }
     .holoframe:hover video { transform: none; }
@@ -340,12 +380,65 @@
     <div class="stat"><div class="v">0.22 to 0.68</div><div class="k">direction selectivity index</div></div>
   </div>
 
+  <h2>Ten thousand bipolar cells</h2>
+  <p>Bipolar cells are the retina's relay. They carry the signal from the photoreceptors
+  to the ganglion cells that send it to the brain, and on the way they split it into
+  more than a dozen parallel channels, one for each type. In October 2026 the citizen
+  scientists of EyeWire II finished proofreading their <b>10,000th</b> bipolar cell in this
+  reconstruction, every one checked branch by branch by hand.</p>
+  <p>The film and the model below show <b>981 of them</b>: every proofread bipolar cell whose
+  cell body sits within about 80 micrometres of one point in the volume, roughly a tenth of
+  the total. Nineteen cells nearer that point are left out, because their recorded position
+  or their branches put them well outside the patch. The types are a classifier's
+  predictions, not labels anyone drew by hand.</p>
+
+  <figure>
+    <div class="holoframe">
+      <span class="hud"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></span>
+      <video src="media/bipolar_patch.mp4" poster="media/bipolar_patch.jpg"
+             controls playsinline preload="metadata"
+             aria-label="981 reconstructed bipolar cells arriving in the order they were proofread, coloured by type, then by the person who proofread each one"></video>
+    </div>
+    <figcaption>The cells arrive in the order they were proofread, coloured by type. Turned
+    on their side they sort into bands, because <b>each type sends its axon terminals to its
+    own depth</b> of the inner retina, where it meets the cells it passes its signal to. Then
+    each cell takes the colour of the citizen scientist who proofread it.</figcaption>
+  </figure>
+
+  <figure class="wide">
+    <div class="bpstage" id="bpstage">
+      <img class="bpph" src="media/bipolar_model.jpg" alt="The same 981 bipolar cells seen from the side, coloured by type">
+      <canvas id="bpcanvas" aria-label="Interactive model of 981 reconstructed bipolar cells"></canvas>
+      <div class="bpload" id="bpload">Loading 981 cells</div>
+      <div class="bptip" id="bptip"></div>
+    </div>
+    <div class="bpbar">
+      <span class="bpseg" role="group" aria-label="Colour cells by">
+        <button type="button" data-mode="type" aria-pressed="true">Type</button>
+        <button type="button" data-mode="proofreader" aria-pressed="false">Proofreader</button>
+      </span>
+      <button type="button" class="bpreset" id="bpreset">Reset view</button>
+      <div class="bpchips" id="bpchips"></div>
+    </div>
+    <figcaption>The same 981 cells, live. <b>Drag to turn them, scroll or pinch to zoom,</b> and
+    point at a cell to see its type and who proofread it. Click a name in the key to hide or
+    show those cells.</figcaption>
+  </figure>
+
+  <div class="note">Unlike the two films above, the bipolar film was not rendered in Blender.
+  It is <b>a web page</b>: the meshes come straight from the segmentation through CAVE, are
+  drawn with three.js, and a browser with no screen captured it one frame at a time. The
+  model above is that page with the controls left on, each cell simplified to about two
+  thousand triangles so the whole patch loads in one go.</div>
+
   <h2>Sources</h2>
   <p>Reconstruction and cell type labels: the <b>stroeh_mouse_retina</b> dataset on
   <a href="https://eyewire.ai">eyewire.ai</a>, served through CAVE. Light responses and
   direction tuning: the Euler lab's calcium imaging of the same tissue, via
   <a href="https://github.com/eulerlab/eyewire2-functional-analysis">eyewire2-functional-analysis</a>.
-  Rendered in Blender with EEVEE Next.</p>
+  The direction selectivity and starburst films were rendered in Blender with EEVEE Next.
+  Bipolar cell proofreading: the citizen scientists of EyeWire II, with types from the
+  project's classifier; the bipolar film and model are drawn in the browser with three.js.</p>
 
   <footer>
     Rendered by Amy Sterling <a href="https://x.com/amyneurons">@amyneurons</a>.
@@ -354,5 +447,174 @@
   </footer>
 </div>
 
+
+<script type="importmap">{"imports":{"three":"./vendor/three.module.min.js"}}</script>
+<script type="module">
+// The live bipolar patch. Loads once the section nears the screen; draws only while it is on it.
+import * as THREE from 'three';
+import { OrbitControls } from './vendor/controls/OrbitControls.js';
+
+const stage = document.getElementById('bpstage'), canvas = document.getElementById('bpcanvas');
+const loadEl = document.getElementById('bpload'), tip = document.getElementById('bptip');
+const chipsEl = document.getElementById('bpchips'), BASE = 'media/bipolars/';
+
+// the films' palettes, so a colour means the same thing in both
+const TYPES = [['RBC','#ff5fb0'],['t1','#3b6cff'],['t2','#4d8dff'],['t3a','#45b8ff'],['t3b','#45e0ff'],['t4','#5fe3c8'],
+  ['t5t','#9fe36a'],['t5o','#d7ea4e'],['t5i','#ffd54a'],['t6','#ffa63d'],['t7','#ff7b3d'],['t8','#ff5c5c'],['XBC','#c38bff'],['GluMI','#f2f2f2']];
+const TYPE_HEX = Object.fromEntries(TYPES), OTHER = '#6b7390';
+const PLAYERS = ['Nseraf','KrzysztofKruk','Annkri','Andrearwen','G Trakimas','st0ck53y','AzureJay','August','Amy R. Sterling','a5hm0r','Celia D'];
+const PLAYER_HEX = ['#ffb84d','#4da3ff','#5fe3a1','#ff6b9d','#c38bff','#ff8a3d','#45e0ff','#f5f06a','#ff5c5c','#a7f55c','#ffffff'];
+const typeKey = t => TYPE_HEX[t] ? t : 'unassigned';
+const typeHex = t => TYPE_HEX[t] || OTHER;
+const playerHex = p => PLAYER_HEX[PLAYERS.indexOf(p)] || OTHER;
+
+let started = false;
+new IntersectionObserver((es, io) => {
+  if (es.some(e => e.isIntersecting) && !started) { started = true; io.disconnect(); start().catch(fail); }
+}, { rootMargin: '600px 0px' }).observe(stage);
+
+function fail(e) { console.error(e); loadEl.textContent = 'The live model needs WebGL; the picture above is the same view.'; }
+
+async function readWithProgress(url, total) {
+  const r = await fetch(url); if (!r.ok) throw new Error(url + ' ' + r.status);
+  if (!r.body) return new Uint8Array(await r.arrayBuffer());
+  const out = new Uint8Array(total), rd = r.body.getReader(); let n = 0;
+  for (;;) { const { done, value } = await rd.read(); if (done) break;
+    out.set(value, n); n += value.length; loadEl.textContent = `Loading 981 cells · ${Math.min(99, Math.round(100 * n / total))}%`; }
+  return out;
+}
+
+async function start() {
+  const meta = await (await fetch(BASE + 'bipolars.json')).json();
+  const buf = await readWithProgress(BASE + 'bipolars.bin', (meta.positions + meta.indices) * 2);
+  const P = new Uint16Array(buf.buffer, 0, meta.positions), I = new Uint16Array(buf.buffer, meta.positions * 2, meta.indices);
+  const [lo, hi] = meta.box, span = [0,1,2].map(k => (hi[k] - lo[k]) / 65535);
+
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.12;
+  renderer.setClearColor(0x07080b, 1);
+  const scene = new THREE.Scene(), pickScene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x0a1030, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(1, -1.2, 1.6); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x8fb5ff, 0.9); rim.position.set(-1.2, 1, -0.4); scene.add(rim);
+
+  const cells = meta.cells.map((c, id) => {
+    const [vo, vn] = c.v, [io, ina] = c.i, pos = new Float32Array(vn * 3);
+    for (let j = 0; j < vn * 3; j++) pos[j] = lo[j % 3] + P[vo * 3 + j] * span[j % 3];
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setIndex(new THREE.BufferAttribute(I.slice(io, io + ina), 1));
+    g.computeVertexNormals(); g.computeBoundingSphere();
+    const mat = new THREE.MeshStandardMaterial({ color: typeHex(c.type), roughness: 0.55, metalness: 0, emissive: 0xffffff, emissiveIntensity: 0 });
+    const mesh = new THREE.Mesh(g, mat); scene.add(mesh);
+    // the pick scene draws each cell in a flat colour that encodes its index
+    // (set as raw linear values, untoned, so the pixel read back is exactly the index)
+    const pickMat = new THREE.MeshBasicMaterial({ toneMapped: false });
+    pickMat.color.setHex(id + 1, THREE.LinearSRGBColorSpace);
+    const pick = new THREE.Mesh(g, pickMat); pickScene.add(pick);
+    return { ...c, key: typeKey(c.type), mesh, pick };
+  });
+
+  // camera: the film's side view, z up
+  const centre = new THREE.Vector3(meta.soma_centre[0], meta.soma_centre[1], (lo[2] + hi[2]) / 2);
+  const cam = new THREE.PerspectiveCamera(22, 1, 1, 20000); cam.up.set(0, 0, 1);
+  const controls = new OrbitControls(cam, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.rotateSpeed = 0.6;
+  controls.screenSpacePanning = true; controls.minDistance = 40; controls.maxDistance = 3000;
+  function home() {
+    const D = Math.max(hi[0] - lo[0], hi[1] - lo[1]) * 0.66, az = 0.28, el = 0.16;
+    const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, tanH = Math.tan(cam.fov * Math.PI / 360) * w / h;
+    const d = Math.max(D / (2 * tanH), 420);
+    cam.position.set(centre.x + d * Math.cos(el) * Math.sin(az), centre.y - d * Math.cos(el) * Math.cos(az), centre.z + d * Math.sin(el));
+    controls.target.copy(centre); controls.update();
+  }
+
+  // draw only when something changed: a still model costs nothing
+  let dirty = true; const redraw = () => { dirty = true; };
+  controls.addEventListener('change', redraw);
+  function size() {
+    const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); redraw();
+  }
+  new ResizeObserver(size).observe(stage); size(); home();
+
+  // colour and visibility
+  let mode = 'type'; const hidden = { type: new Set(), proofreader: new Set() };
+  function apply() {
+    for (const c of cells) {
+      c.mesh.material.color.set(mode === 'type' ? typeHex(c.type) : playerHex(c.proofreader));
+      c.mesh.visible = c.pick.visible = !hidden.type.has(c.key) && !hidden.proofreader.has(c.proofreader);
+    }
+    buildChips(); redraw();
+  }
+  function buildChips() {
+    const counts = {};
+    const keyOf = c => mode === 'type' ? c.key : c.proofreader;
+    for (const c of cells) counts[keyOf(c)] = (counts[keyOf(c)] || 0) + 1;
+    const order = mode === 'type' ? TYPES.map(t => t[0]).concat(['unassigned']) : PLAYERS;
+    chipsEl.innerHTML = order.filter(k => counts[k]).map(k => {
+      const hex = mode === 'type' ? (TYPE_HEX[k] || OTHER) : playerHex(k);
+      const on = !hidden[mode].has(k);
+      return `<button type="button" data-k="${k}" aria-pressed="${on}"><i style="background:${hex}"></i>${k} <em>${counts[k]}</em></button>`;
+    }).join('');
+  }
+  chipsEl.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const k = b.dataset.k, set = hidden[mode]; set.has(k) ? set.delete(k) : set.add(k); apply();
+  });
+  document.querySelectorAll('.bpseg button').forEach(b => b.addEventListener('click', () => {
+    mode = b.dataset.mode;
+    document.querySelectorAll('.bpseg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    apply();
+  }));
+  document.getElementById('bpreset').addEventListener('click', () => {
+    hidden.type.clear(); hidden.proofreader.clear(); apply(); home();
+  });
+  apply();
+
+  // pointing at a cell: draw the pick scene into a single pixel under the pointer
+  const pickTarget = new THREE.WebGLRenderTarget(1, 1), px = new Uint8Array(4);
+  let hover = null, pointer = null, dragged = false;
+  function pickAt(x, y) {
+    const w = canvas.clientWidth, h = canvas.clientHeight, dpr = renderer.getPixelRatio();
+    cam.setViewOffset(w * dpr, h * dpr, x * dpr, y * dpr, 1, 1);
+    renderer.setRenderTarget(pickTarget); renderer.setClearColor(0x000000, 1); renderer.render(pickScene, cam);
+    renderer.readRenderTargetPixels(pickTarget, 0, 0, 1, 1, px);
+    renderer.setRenderTarget(null); renderer.setClearColor(0x07080b, 1); cam.clearViewOffset();
+    const id = (px[0] << 16 | px[1] << 8 | px[2]) - 1;
+    return id >= 0 && id < cells.length ? cells[id] : null;
+  }
+  function show(c, x, y) {
+    if (hover && hover !== c) { hover.mesh.material.emissiveIntensity = 0; redraw(); }
+    if (c && c !== hover) redraw();
+    hover = c;
+    if (!c) { tip.style.display = 'none'; return; }
+    c.mesh.material.emissiveIntensity = 0.28;
+    const t = TYPE_HEX[c.type] ? c.type : 'unassigned type';
+    tip.innerHTML = `<b>${t}</b> <span>bipolar cell</span><br><span>proofread by</span> ${c.proofreader}`;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.style.display = 'block';
+  }
+  canvas.addEventListener('pointerdown', () => { dragged = false; });
+  canvas.addEventListener('pointermove', e => {
+    if (e.buttons) { dragged = true; show(null); return; }
+    if (e.pointerType === 'mouse') pointer = [e.offsetX, e.offsetY];
+  });
+  canvas.addEventListener('pointerleave', () => { pointer = null; show(null); });
+  canvas.addEventListener('pointerup', e => {
+    if (!dragged && e.pointerType !== 'mouse') show(pickAt(e.offsetX, e.offsetY), e.offsetX, e.offsetY);
+  });
+
+  let onScreen = true;
+  new IntersectionObserver(es => { onScreen = es[0].isIntersecting; }).observe(stage);
+  renderer.setAnimationLoop(() => {
+    if (!onScreen) return;
+    controls.update();
+    if (pointer) { const [x, y] = pointer; pointer = null; show(pickAt(x, y), x, y); }
+    if (dirty) { dirty = false; renderer.render(scene, cam); }
+  });
+  stage.classList.add('live');
+}
+</script>
 </body>
 </html>
