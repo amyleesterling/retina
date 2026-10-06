@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>10,000 bipolar cells &middot; EyeWire II</title>
+<meta name="description" content="981 reconstructed bipolar cells from the EyeWire II mouse retina, live in the browser: play it like a film, or stop and turn the cells yourself.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="10,000 bipolar cells, mapped by citizen scientists">
+<meta property="og:description" content="981 real bipolar cells from EyeWire II, live in the browser. Play it like a film, or stop and turn the cells yourself.">
+<meta property="og:image" content="https://amyleesterling.github.io/retina/media/bipolar_model.jpg">
+<meta property="og:url" content="https://amyleesterling.github.io/retina/bipolars/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://amyleesterling.github.io/retina/media/bipolar_model.jpg">
+<link rel="stylesheet" href="scifi/badge-award.css">
+<link rel="stylesheet" href="scifi/confetti-burst.css">
+<style>
+  @font-face { font-family: Inter; font-weight: 100 900; src: url(fonts/inter-latin.woff2) format("woff2"); }
+  :root { --ink: #EFF2F7; --dim: #9AA2B1; --faint: #666E7C; --ground: #03050f; --line: #1D222B; --accent: #3E96F0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--ground); color: var(--ink); overflow: hidden;
+               font-family: Inter, ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  #app { position: fixed; inset: 0; height: 100dvh; }
+  canvas#c { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none;
+             cursor: grab; opacity: 0; transition: opacity .6s ease; }
+  canvas#c:active { cursor: grabbing; }
+  .live canvas#c { opacity: 1; }
+  #ph { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: opacity .6s ease; }
+  .live #ph { opacity: 0; pointer-events: none; }
+  #vig { position: absolute; inset: 0; pointer-events: none;
+         background: linear-gradient(180deg, rgba(3,5,15,.7) 0%, rgba(3,5,15,0) 22%, rgba(3,5,15,0) 70%, rgba(3,5,15,.88) 100%); }
+  #load { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); font-size: 13px; letter-spacing: .14em;
+          text-transform: uppercase; color: rgba(170,200,235,.95); text-shadow: 0 1px 10px #000; }
+  .live #load { display: none; }
+
+  /* the counter, top left */
+  #hud { position: absolute; left: clamp(16px,4vw,48px); top: clamp(14px,3vh,36px); pointer-events: none; }
+  #hud a { pointer-events: auto; }
+  .back { display: inline-block; font-size: 12px; letter-spacing: .08em; color: var(--dim); text-decoration: none; margin-bottom: 14px; }
+  .back:hover { color: var(--ink); }
+  .eyebrow { font-size: 12px; letter-spacing: .3em; text-transform: uppercase; color: rgba(255,255,255,.55); font-weight: 500; }
+  #count { font-size: clamp(48px,7vw,92px); font-weight: 300; letter-spacing: -.035em; line-height: 1; margin: 10px 0 4px;
+           font-variant-numeric: tabular-nums; text-shadow: 0 0 40px rgba(120,160,255,.25); }
+  .clabel { font-size: clamp(15px,1.6vw,20px); color: rgba(255,255,255,.75); }
+
+  /* the finale: the count flies to the middle and rolls on to 10,000 */
+  #fveil { position: absolute; inset: 0; background: var(--ground); opacity: 0; pointer-events: none; }
+  #finale { position: absolute; left: 0; right: 0; top: 30%; text-align: center; pointer-events: none; opacity: 0; padding: 0 16px; }
+  #fnum { display: inline-block; font-size: clamp(90px,15vw,210px); font-weight: 300; letter-spacing: -.035em; line-height: 1;
+          font-variant-numeric: tabular-nums; transform-origin: 50% 50%; text-shadow: 0 0 60px rgba(120,160,255,.3); }
+  #fnum.gold { color: #ffd56a; text-shadow: 0 0 80px rgba(255,200,90,.55), 0 0 160px rgba(255,180,60,.25); }
+  #fline { font-size: clamp(17px,2.1vw,29px); font-weight: 300; color: rgba(255,255,255,.92); margin: 28px auto 0; max-width: 1100px;
+           line-height: 1.4; text-shadow: 0 2px 18px rgba(3,5,15,.9); }
+
+  /* caption and controls along the bottom */
+  #bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 clamp(16px,4vw,48px) calc(14px + env(safe-area-inset-bottom)); }
+  #cap { font-size: clamp(14px,1.5vw,19px); color: rgba(255,255,255,.82); line-height: 1.4; margin: 0 0 12px; max-width: 1000px; min-height: 1.4em; }
+  #cap b { color: #fff; font-weight: 600; }
+  .row { display: flex; align-items: center; gap: 12px; }
+  #play { width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid rgba(122,186,246,.45);
+          background: rgba(62,150,240,.16); color: #fff; cursor: pointer; display: grid; place-items: center; padding: 0; }
+  #play:hover { background: rgba(62,150,240,.3); }
+  #play svg { width: 16px; height: 16px; fill: currentColor; }
+  #scrub { flex: 1; accent-color: var(--accent); min-width: 80px; }
+  #time { font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .seg { display: inline-flex; border: 1px solid rgba(88,148,238,.3); border-radius: 4px; overflow: hidden; flex: none; }
+  .seg button, #reset { font: inherit; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim);
+                         background: rgba(3,5,15,.4); border: 0; padding: 7px 10px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { color: var(--ink); background: rgba(62,150,240,.22); }
+  #reset { border: 1px solid var(--line); border-radius: 4px; flex: none; }
+  .seg button:hover, #reset:hover { color: var(--ink); }
+  #chips { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 10px; font-size: 12.5px; color: rgba(255,255,255,.88); }
+  #chips button { font: inherit; color: inherit; background: none; border: 0; padding: 2px 0; cursor: pointer;
+                  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  #chips button i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  #chips button em { font-style: normal; color: rgba(255,255,255,.5); font-variant-numeric: tabular-nums; }
+  #chips button[aria-pressed="false"] { opacity: .32; }
+  #chips button.dim { opacity: .22; }
+  #hint { font-size: 11.5px; color: var(--faint); margin-top: 8px; }
+  @media (max-width: 700px) {
+    .row { flex-wrap: wrap; gap: 8px; }
+    .seg button, #reset { padding: 7px 8px; }
+    #reset .long { display: none; }
+    #scrub { order: 5; flex-basis: 100%; }
+    #chips { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+    #hint { display: none; }
+  }
+  #tip { position: absolute; pointer-events: none; z-index: 5; padding: 6px 10px; border-radius: 3px; font-size: 13px;
+         line-height: 1.35; white-space: nowrap; background: rgba(8,14,26,.9); border: 1px solid rgba(122,186,246,.3);
+         box-shadow: 0 6px 20px rgba(0,0,0,.5); transform: translate(14px,14px); display: none; }
+  #tip b { font-weight: 600; } #tip span { color: var(--dim); }
+
+  /* the award, as in the film: lighter backdrop, nothing to click through to */
+  .nge-hero-overlay { background: radial-gradient(ellipse at center, rgba(6,12,28,.45) 0%, rgba(0,0,0,.78) 100%); }
+  @media (max-width: 520px) { .nge-hero-card { padding: 40px 22px 34px; max-width: calc(100vw - 24px); } }
+  .nge-hero-subtitle { font-size: 17px; max-width: 460px; color: rgba(200,215,235,.88); }
+  .holoburst-canvas { z-index: 10001; }
+  @media (min-width: 900px) and (min-height: 760px) { .nge-hero-card { zoom: 1.15; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <img id="ph" src="../media/bipolar_model.jpg" alt="981 bipolar cells seen from the side, coloured by type">
+  <canvas id="c" aria-label="981 reconstructed bipolar cells. Drag to turn, scroll or pinch to zoom."></canvas>
+  <div id="vig"></div>
+  <div id="fveil"></div>
+  <div id="load">Loading 981 cells</div>
+  <div id="hud">
+    <a class="back" href="../">&larr; Retina</a>
+    <div class="eyebrow">EyeWire II &middot; bipolar cells</div>
+    <div id="count">1</div>
+    <div class="clabel" id="clabel">cells</div>
+  </div>
+  <div id="finale"><div id="fnum"></div><div id="fline"></div></div>
+  <div id="bottom">
+    <div id="cap"></div>
+    <div class="row">
+      <button id="play" aria-label="Play"><svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg></button>
+      <input id="scrub" type="range" min="0" max="1000" value="0" step="1" aria-label="Time">
+      <span id="time">0:00 / 0:50</span>
+      <span class="seg" role="group" aria-label="Colour cells by">
+        <button type="button" data-mode="type" aria-pressed="true">Type</button>
+        <button type="button" data-mode="proofreader" aria-pressed="false">Proofreader</button>
+      </span>
+      <button type="button" id="reset">Reset<span class="long"> view</span></button>
+    </div>
+    <div id="chips"></div>
+    <div id="hint">Press play to watch it as a film. Drag to turn the cells, scroll to zoom, point at a cell to see who proofread it.</div>
+  </div>
+  <div id="tip"></div>
+</div>
+
+<script src="scifi/confetti-burst.js"></script>
+<script src="scifi/badge-award.js"></script>
+<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from '../vendor/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id), fmt = n => n.toLocaleString('en-US');
+const app = $('app'), canvas = $('c'), BASE = '../media/bipolars/';
+const TYPES = [['RBC','#ff5fb0'],['t1','#3b6cff'],['t2','#4d8dff'],['t3a','#45b8ff'],['t3b','#45e0ff'],['t4','#5fe3c8'],
+  ['t5t','#9fe36a'],['t5o','#d7ea4e'],['t5i','#ffd54a'],['t6','#ffa63d'],['t7','#ff7b3d'],['t8','#ff5c5c'],['XBC','#c38bff'],['GluMI','#f2f2f2']];
+const TYPE_HEX = Object.fromEntries(TYPES), OTHER = '#6b7390';
+const PLAYERS = ['Nseraf','KrzysztofKruk','Annkri','Andrearwen','G Trakimas','st0ck53y','AzureJay','August','Amy R. Sterling','a5hm0r','Celia D'];
+const PLAYER_HEX = ['#ffb84d','#4da3ff','#5fe3a1','#ff6b9d','#c38bff','#ff8a3d','#45e0ff','#f5f06a','#ff5c5c','#a7f55c','#ffffff'];
+const typeKey = t => TYPE_HEX[t] ? t : 'unassigned';
+const typeHex = t => TYPE_HEX[t] || OTHER, playerHex = p => PLAYER_HEX[PLAYERS.indexOf(p)] || OTHER;
+const ease = x => x < 0 ? 0 : x > 1 ? 1 : x * x * (3 - 2 * x), sm = (t, a, b) => ease((t - a) / (b - a)), lerp = (a, b, x) => a + (b - a) * x;
+const easeIO = x => x < 0 ? 0 : x > 1 ? 1 : (x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+
+try { await start(); } catch (e) { console.error(e); $('load').textContent = 'This needs WebGL; the picture is the same view.'; }
+
+async function start() {
+  // ---- data ------------------------------------------------------------------------
+  const TEXT = await (await fetch('captions.json')).json();
+  const meta = await (await fetch(BASE + 'bipolars.json')).json();
+  const total = (meta.positions + meta.indices) * 2;
+  const r = await fetch(BASE + 'bipolars.bin'); let buf;
+  if (r.body) { buf = new Uint8Array(total); const rd = r.body.getReader(); let n = 0;
+    for (;;) { const { done, value } = await rd.read(); if (done) break; buf.set(value, n); n += value.length;
+      $('load').textContent = `Loading 981 cells · ${Math.min(99, Math.round(100 * n / total))}%`; } }
+  else buf = new Uint8Array(await r.arrayBuffer());
+  const P = new Uint16Array(buf.buffer, 0, meta.positions), I = new Uint16Array(buf.buffer, meta.positions * 2, meta.indices);
+  const [lo, hi] = meta.box, span = [0, 1, 2].map(k => (hi[k] - lo[k]) / 65535);
+
+  // ---- scene -----------------------------------------------------------------------
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.15;
+  renderer.setClearColor(0x03050f, 1);
+  const scene = new THREE.Scene(), pickScene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x0a1030, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6); key.position.set(1, -1.2, 1.6); scene.add(key);
+  const rim = new THREE.DirectionalLight(0x8fb5ff, 0.9); rim.position.set(-1.2, 1, -0.4); scene.add(rim);
+
+  // cells in the order they were proofread: the film's order
+  const order = meta.cells.map((c, i) => [c.date || '', i]).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] - b[1]);
+  const rank = new Array(meta.cells.length); order.forEach(([, i], k) => rank[i] = k);
+  const cells = meta.cells.map((c, id) => {
+    const [vo, vn] = c.v, [io, ina] = c.i, pos = new Float32Array(vn * 3);
+    for (let j = 0; j < vn * 3; j++) pos[j] = lo[j % 3] + P[vo * 3 + j] * span[j % 3];
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setIndex(new THREE.BufferAttribute(I.slice(io, io + ina), 1));
+    g.computeVertexNormals(); g.computeBoundingSphere();
+    const mat = new THREE.MeshStandardMaterial({ color: typeHex(c.type), roughness: 0.55, metalness: 0,
+      emissive: 0xffffff, emissiveIntensity: 0, transparent: true, opacity: 1 });
+    const mesh = new THREE.Mesh(g, mat); scene.add(mesh);
+    const pm = new THREE.MeshBasicMaterial({ toneMapped: false }); pm.color.setHex(id + 1, THREE.LinearSRGBColorSpace);
+    const pick = new THREE.Mesh(g, pm); pickScene.add(pick);
+    return { ...c, key: typeKey(c.type), rank: rank[id], mesh, pick,
+             cType: new THREE.Color(typeHex(c.type)), cPlayer: new THREE.Color(playerHex(c.proofreader)) };
+  });
+  const N = cells.length, byRank = cells.slice().sort((a, b) => a.rank - b.rank);
+
+  // ---- camera: the film's path, framed for whatever shape the window is ---------------
+  const centre = new THREE.Vector3(meta.soma_centre[0], meta.soma_centre[1], (lo[2] + hi[2]) / 2);
+  const cam = new THREE.PerspectiveCamera(15, 1, 1, 20000); cam.up.set(0, 0, 1);
+  const controls = new OrbitControls(cam, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.08; controls.rotateSpeed = 0.6;
+  controls.screenSpacePanning = true; controls.minDistance = 60; controls.maxDistance = 4000;
+  const D = Math.max(hi[0] - lo[0], hi[1] - lo[1]) * 0.92, zExt = hi[2] - lo[2];
+  function pose(ts, out) {
+    const w = canvas.clientWidth || 1, h = canvas.clientHeight || 1, tanV = Math.tan(cam.fov * Math.PI / 360), tanH = tanV * w / h;
+    const tall = w < h;
+    const dTop = tall ? D / (0.9 * 2 * tanH) : D / (0.84 * 2 * tanV);
+    const dSide = tall ? D / 2 + zExt / (2 * 0.5 * tanV) : Math.max(D / (1.04 * 2 * tanH), D / 2 + zExt / (2 * 0.6 * tanV));
+    const k = sm(ts, T.fill0 + 2.6, T.fill1 + 1);
+    const el = lerp(1.2, 0.09, k), az = -0.6 + 0.03 * (ts + 3.4), d = lerp(dTop, dSide, k);
+    out.set(centre.x + d * Math.cos(el) * Math.sin(az), centre.y - d * Math.cos(el) * Math.cos(az), centre.z + d * Math.sin(el));
+    return out;
+  }
+
+  // ---- timeline, the film's ------------------------------------------------------------
+  const F = TEXT.finale;
+  const T = { fill0: 0, fill1: 23.6, playerIn: 29.6, playerDone: 31.6, freeze: F.at,
+              roll0: F.at + F.roll_starts_after, roll1: F.at + F.roll_starts_after + F.roll_seconds,
+              award: TEXT.award.at, end: TEXT.award.at + 7.0 };
+  let t = 0, playing = false, follow = true, blend = 1, override = null, awardOn = false, dirty = true;
+  const blendFrom = new THREE.Vector3(), blendTarget = new THREE.Vector3(), tmpV = new THREE.Vector3(), tmpC = new THREE.Color();
+  const hidden = { type: new Set(), proofreader: new Set() };
+
+  function applyCells() {
+    const ts = Math.min(t, T.freeze);
+    const arrived = 1 + sm(ts, T.fill0, T.fill1) * (N - 1);
+    const kP = override ? (override === 'proofreader' ? 1 : 0) : sm(ts, T.playerIn, T.playerDone);
+    let n = 0;
+    for (const c of byRank) {
+      const age = arrived - c.rank;
+      const shown = age > 0 && !hidden.type.has(c.key) && !hidden.proofreader.has(c.proofreader);
+      c.mesh.visible = c.pick.visible = shown;
+      if (age > 0) n++;
+      if (!shown) continue;
+      const k = c.rank === 0 ? 1 : Math.min(1, age / 10);
+      c.mesh.material.opacity = k; c.mesh.material.transparent = k < 1; c.mesh.material.depthWrite = k > 0.4;
+      if (c !== hover) c.mesh.material.emissiveIntensity = 0.9 * (1 - k) * (1 - k);
+      c.mesh.material.color.copy(tmpC.copy(c.cType).lerp(c.cPlayer, kP));
+    }
+    $('count').textContent = fmt(n);
+    // the key follows what the colours mean right now
+    const m = kP > 0.5 ? 'proofreader' : 'type';
+    if (m !== chipMode) buildChips(m);
+    if (m === 'type') { const seen = new Set(byRank.filter(c => arrived - c.rank > 0).map(c => c.key));
+      [...$('chips').children].forEach(b => b.classList.toggle('dim', !seen.has(b.dataset.k))); }
+    document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+    return n;
+  }
+
+  // the finale: the counter flies to the middle and rolls on to 10,000; then the award
+  const fnum = $('fnum'), fline = $('fline'), countEl = $('count'); let flip = null;
+  fline.textContent = F.line.replace('{n}', fmt(N));
+  function finale(n) {
+    if (t < T.freeze) {
+      countEl.style.opacity = 1; $('clabel').style.opacity = 1; $('hud').style.opacity = 1; $('cap').style.opacity = 1; $('chips').style.opacity = 1;
+      $('finale').style.opacity = 0; $('fveil').style.opacity = 0; flip = null; return;
+    }
+    if (!flip) {
+      fnum.textContent = fmt(n); fnum.style.transform = 'none';
+      const a = countEl.getBoundingClientRect(), b = fnum.getBoundingClientRect();
+      flip = { dx: (a.left + a.width / 2) - (b.left + b.width / 2), dy: (a.top + a.height / 2) - (b.top + b.height / 2), s: a.height / b.height };
+    }
+    const hudK = 1 - sm(t, T.freeze, T.freeze + 0.6);
+    countEl.style.opacity = 0; $('clabel').style.opacity = 0; $('cap').style.opacity = hudK; $('chips').style.opacity = hudK;
+    $('finale').style.opacity = 1 - sm(t, T.award - 0.1, T.award + 0.4);
+    $('fveil').style.opacity = 0.6 * sm(t, T.freeze, T.freeze + 1.0);
+    const k = easeIO((t - T.freeze) / 1.1);
+    fnum.style.transform = `translate(${flip.dx * (1 - k)}px, ${flip.dy * (1 - k)}px) scale(${lerp(flip.s, 1, k)})`;
+    const v = t >= T.roll1 ? F.roll_to : Math.round(lerp(n, F.roll_to, easeIO((t - T.roll0) / (T.roll1 - T.roll0))));
+    fnum.textContent = fmt(v); fnum.classList.toggle('gold', v >= F.roll_to);
+    fline.style.opacity = sm(t, T.freeze + 0.8, T.freeze + 1.5);
+  }
+  function award() {
+    if (t >= T.award && !awardOn && playing) { awardOn = true;
+      holoaward({ name: TEXT.award.name, desc: TEXT.award.desc, img: 'scifi/citizen-scientist.png' });
+      const h = document.querySelector('.nge-hero-hint'); if (h) h.textContent = 'Click anywhere to close'; }
+    if (t < T.award && awardOn) { awardOn = false; holoaward.close(); }
+  }
+
+  function setTime(nt) {
+    t = Math.max(0, Math.min(T.end, nt));
+    const n = applyCells(); finale(n); award();
+    const c = TEXT.captions.find(c => t >= c.from && t < c.to);
+    $('cap').innerHTML = c ? c.html : '';
+    $('scrub').value = Math.round(1000 * t / T.end);
+    const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    $('time').textContent = `${mmss(t)} / ${mmss(T.end)}`;
+    dirty = true;
+  }
+
+  // ---- controls ---------------------------------------------------------------------
+  const PLAY = '<svg viewBox="0 0 16 16"><path d="M3 1.5v13l11-6.5z"/></svg>';
+  const PAUSE = '<svg viewBox="0 0 16 16"><path d="M3 1.5h3.5v13H3zM9.5 1.5H13v13H9.5z"/></svg>';
+  const REPLAY = '<svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 1 1-5.66 8h1.6A4.5 4.5 0 1 0 8 3.5V6L4.5 3 8 0z"/></svg>';
+  function setPlaying(p) {
+    playing = p;
+    if (p) { if (t >= T.end) { setTime(0); if (awardOn) { awardOn = false; holoaward.close(); } }
+      override = null; if (!follow) { follow = true; blend = 0; blendFrom.copy(cam.position); blendTarget.copy(controls.target); } }
+    $('play').innerHTML = p ? PAUSE : (t >= T.end ? REPLAY : PLAY);
+    $('play').setAttribute('aria-label', p ? 'Pause' : 'Play');
+  }
+  $('play').addEventListener('click', () => setPlaying(!playing));
+  addEventListener('keydown', e => { if (e.code === 'Space' && e.target === document.body) { e.preventDefault(); setPlaying(!playing); } });
+  $('scrub').addEventListener('input', e => {
+    setPlaying(false); follow = true; blend = 1; setTime(T.end * e.target.value / 1000);
+  });
+  // touching the cells hands the camera to you, and pauses
+  controls.addEventListener('start', () => { follow = false; if (playing) setPlaying(false); });
+  controls.addEventListener('change', () => { dirty = true; });
+  document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+    override = b.dataset.mode; if (playing) setPlaying(false); setTime(t);
+  }));
+  $('reset').addEventListener('click', () => {
+    hidden.type.clear(); hidden.proofreader.clear(); override = null; follow = true; blend = 0;
+    blendFrom.copy(cam.position); blendTarget.copy(controls.target); setTime(t);
+  });
+  let chipMode = null;
+  function buildChips(m) {
+    chipMode = m; const counts = {}, k = c => m === 'type' ? c.key : c.proofreader;
+    for (const c of cells) counts[k(c)] = (counts[k(c)] || 0) + 1;
+    const keys = m === 'type' ? TYPES.map(x => x[0]).concat(['unassigned']) : PLAYERS;
+    $('chips').innerHTML = keys.filter(x => counts[x]).map(x => {
+      const hex = m === 'type' ? (TYPE_HEX[x] || OTHER) : playerHex(x);
+      return `<button type="button" data-k="${x}" aria-pressed="${!hidden[m].has(x)}"><i style="background:${hex};box-shadow:0 0 8px ${hex}"></i>${x} <em>${counts[x]}</em></button>`;
+    }).join('');
+  }
+  $('chips').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const set = hidden[chipMode], k = b.dataset.k; set.has(k) ? set.delete(k) : set.add(k);
+    b.setAttribute('aria-pressed', String(!set.has(k))); setTime(t);
+  });
+
+  // pointing at a cell: draw the pick scene into the one pixel under the pointer
+  const pickTarget = new THREE.WebGLRenderTarget(1, 1), px = new Uint8Array(4);
+  let hover = null, pointer = null, dragged = false;
+  function pickAt(x, y) {
+    const w = canvas.clientWidth, h = canvas.clientHeight, dpr = renderer.getPixelRatio();
+    cam.setViewOffset(w * dpr, h * dpr, x * dpr, y * dpr, 1, 1);
+    renderer.setRenderTarget(pickTarget); renderer.setClearColor(0, 1); renderer.render(pickScene, cam);
+    renderer.readRenderTargetPixels(pickTarget, 0, 0, 1, 1, px);
+    renderer.setRenderTarget(null); renderer.setClearColor(0x03050f, 1); cam.clearViewOffset();
+    const id = (px[0] << 16 | px[1] << 8 | px[2]) - 1;
+    return id >= 0 && id < N ? cells[id] : null;
+  }
+  function show(c, x, y) {
+    if (hover && hover !== c) { hover.mesh.material.emissiveIntensity = 0; dirty = true; }
+    if (c && c !== hover) dirty = true;
+    hover = c;
+    const tip = $('tip');
+    if (!c) { tip.style.display = 'none'; return; }
+    c.mesh.material.emissiveIntensity = 0.28;
+    tip.innerHTML = `<b>${TYPE_HEX[c.type] ? c.type : 'unassigned type'}</b> <span>bipolar cell</span><br><span>proofread by</span> ${c.proofreader}`;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px'; tip.style.display = 'block';
+  }
+  canvas.addEventListener('pointerdown', () => { dragged = false; });
+  canvas.addEventListener('pointermove', e => {
+    if (e.buttons) { dragged = true; show(null); return; }
+    if (e.pointerType === 'mouse') pointer = [e.offsetX, e.offsetY];
+  });
+  canvas.addEventListener('pointerleave', () => { pointer = null; show(null); });
+  canvas.addEventListener('pointerup', e => {
+    if (!dragged && e.pointerType !== 'mouse') show(pickAt(e.offsetX, e.offsetY), e.offsetX, e.offsetY);
+  });
+
+  function size() {
+    const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); dirty = true;
+  }
+  new ResizeObserver(size).observe(app); size();
+  controls.target.copy(centre); pose(0, cam.position); controls.update();
+  setTime(0); setPlaying(false);
+
+  let last = performance.now();
+  renderer.setAnimationLoop(now => {
+    const dt = Math.min(0.1, (now - last) / 1000); last = now;
+    if (playing) { setTime(t + dt); if (t >= T.end) setPlaying(false); }
+    if (follow) {
+      pose(Math.min(t, T.freeze), tmpV);
+      if (blend < 1) { blend = Math.min(1, blend + dt / 0.8); const k = ease(blend);
+        cam.position.lerpVectors(blendFrom, tmpV, k); controls.target.lerpVectors(blendTarget, centre, k); dirty = true; }
+      else { if (!cam.position.equals(tmpV)) dirty = true; cam.position.copy(tmpV); controls.target.copy(centre); }
+      cam.lookAt(controls.target);
+    } else controls.update();
+    if (pointer) { const [x, y] = pointer; pointer = null; show(pickAt(x, y), x, y); }
+    if (dirty) { dirty = false; renderer.render(scene, cam); }
+  });
+  app.classList.add('live');
+}
+</script>
+</body>
+</html>
