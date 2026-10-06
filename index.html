@@ -229,6 +229,9 @@
   .bpseg button[aria-pressed="true"] { color: var(--ink); background: rgba(62,150,240,.18); }
   .bpreset { border: 1px solid var(--line); border-radius: 4px; margin-left: auto; }
   .bpreset:hover, .bpseg button:hover { color: var(--ink); }
+  .bpopen { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink); text-decoration: none;
+            padding: 6px 11px; border: 1px solid rgba(122,186,246,.45); border-radius: 4px; background: rgba(62,150,240,.16); }
+  .bpopen:hover { background: rgba(62,150,240,.3); }
   .bpchips { display: flex; flex-wrap: wrap; gap: 6px 14px; width: 100%; font-size: 12.5px; color: var(--dim); }
   .bpchips button { font: inherit; color: inherit; background: none; border: 0; padding: 2px 0; cursor: pointer;
                     display: inline-flex; align-items: center; gap: 6px; }
@@ -418,11 +421,13 @@
         <button type="button" data-mode="proofreader" aria-pressed="false">Proofreader</button>
       </span>
       <button type="button" class="bpreset" id="bpreset">Reset view</button>
+      <a class="bpopen" href="bipolars/" target="_blank" rel="noopener">Full screen, with play &#8599;</a>
       <div class="bpchips" id="bpchips"></div>
     </div>
     <figcaption>The same 981 cells, live. <b>Drag to turn them, scroll or pinch to zoom,</b> and
     point at a cell to see its type and who proofread it. Click a name in the key to hide or
-    show those cells.</figcaption>
+    show those cells. <a href="bipolars/" target="_blank" rel="noopener">Open it full screen</a>
+    to play the whole film live, with the cells still yours to turn whenever you pause.</figcaption>
   </figure>
 
   <div class="note">Unlike the two films above, the bipolar film was not rendered in Blender.
