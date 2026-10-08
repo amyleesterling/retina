@@ -165,6 +165,16 @@
   .stats { display: grid; gap: 10px; margin: 22px 0 8px;
            grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 620px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+  /* the four stages of the film, as stills you can stop and read. Each carries its
+     own legend, which is why they are worth showing beside the film rather than
+     being redundant with it. */
+  .stages { display: grid; gap: 14px; margin: 20px 0 6px;
+            grid-template-columns: 1fr; }
+  @media (min-width: 700px) { .stages { grid-template-columns: repeat(2, 1fr); } }
+  .stages figure { margin: 0; }
+  .stages img { display: block; width: 100%; height: auto; border-radius: 3px; }
+  .stages figcaption { margin-top: 7px; font-size: 13.5px; line-height: 1.55;
+                       color: var(--dim); }
   .stat {
     background: linear-gradient(158deg, rgba(18,30,52,.72), rgba(9,14,26,.55));
     border: 1px solid rgba(88,148,238,.26); border-radius: 4px; padding: 11px 12px 10px;
@@ -261,8 +271,8 @@
       imaged in an electron microscope and reconstructed. This plays one back on the other.</p>
       <div class="rule"></div>
       <p class="meta">
-        <span><b>202</b> imaged cells</span>
-        <span><b>64</b> direction selective</span>
+        <span><b>364</b> imaged cells</span>
+        <span><b>106</b> direction selective</span>
         <span><b>8</b> bar directions</span>
         <span><b>5</b> recording fields</span>
       </p>
@@ -288,8 +298,8 @@
     </div>
     <figcaption>Every cell sits as a dim outline until the bar moves the way it likes.
     <b>Hue is the direction it prefers</b> and <b>brightness is its own recorded
-    response</b>, so each of the 64 direction selective cells lights exactly once per
-    sweep. The 138 that are not significantly tuned stay dim on purpose. Most of the
+    response</b>, so each of the 106 direction selective cells lights exactly once per
+    sweep. The 258 that are not significantly tuned stay dim on purpose. Most of the
     retina is not direction selective, and hiding that would make the picture a
     better advertisement and a worse measurement.</figcaption>
   </figure>
@@ -308,14 +318,50 @@
   palette spaced evenly around the circle, so the map still wraps and still means an
   angle without becoming a rainbow.</div>
 
+  <h2>The four stages</h2>
+  <p>The film moves through four pictures of the same 364 cells, and each one answers a
+  different question. They are worth seeing still, because a legend is hard to read
+  while the thing underneath it is moving.</p>
+
+  <div class="stages">
+    <figure>
+      <img src="media/stage_anatomy.jpg" alt="All 364 reconstructed retinal cells in plain grey, no colour applied" loading="lazy">
+      <figcaption><b>The reconstruction.</b> Every cell with both a calcium recording and
+      a mesh, with no measurement painted on it yet. This is the structure the rest is
+      drawn onto.</figcaption>
+    </figure>
+    <figure>
+      <img src="media/stage_field.jpg" alt="The same cells coloured by which of five recording fields they came from, appearing as five separate clusters" loading="lazy">
+      <figcaption><b>Colour is the recording field.</b> Five separate two photon fields,
+      GCL0 to GCL4. They sit apart because the microscope looked at five patches, not
+      because the retina is organised that way. This is the one stage where the colour
+      is about the experiment rather than the tissue.</figcaption>
+    </figure>
+    <figure>
+      <img src="media/stage_type.jpg" alt="The same cells recoloured by anatomical cell type" loading="lazy">
+      <figcaption><b>Colour is cell type.</b> 83 named types across 364 cells, 213
+      ganglion and 151 amacrine. Seventy of them carry no type at all, and those stay
+      grey rather than being given a plausible one.</figcaption>
+    </figure>
+    <figure>
+      <img src="media/stage_ds.jpg" alt="Only the direction selective cells remain lit, coloured by preferred direction" loading="lazy">
+      <figcaption><b>Everything not direction selective falls away.</b> 106 cells
+      survive, coloured by the direction each one prefers. They are scattered through
+      the sheet rather than gathered, which is the point: you could not find them by
+      looking at the anatomy.</figcaption>
+    </figure>
+  </div>
+
   <h2>How the direction gets computed</h2>
   <p>Direction selectivity is not made in the brain. It is already finished by the time
   the signal leaves the eye, and the cell most responsible is the starburst amacrine
   cell. Its dendrites radiate from the cell body like a firework, and the direction
   computation happens along those individual branches.</p>
-  <p><b>The 24 shown below are a sample, not the population.</b> They are the starburst
-  cells that fall inside the calcium imaged set, and the reconstruction holds several
-  hundred more. That matters for what this film can and cannot be used to claim: the
+  <p><b>The 24 shown below are a sample, not the population.</b> There are 48 starburst
+  cells in the calcium imaged set and the reconstruction holds several hundred more, so
+  this film is a sample twice over. It shows 24 because that is how many had a usable
+  mesh when it was made; the rebuilt library now covers all 48, and this film has not
+  been remade to match. That matters for what this film can and cannot be used to claim: the
   real sheet is far denser than what you are about to watch, and any impression you get
   here about how much neighbouring starburst cells overlap is an artefact of my
   sampling rather than a fact about retina. What survives the sampling is the depth,
@@ -377,10 +423,10 @@
   count of <b>the overlap</b>, and should never be read as a count of the dataset.</p>
 
   <div class="stats">
-    <div class="stat"><div class="v">202</div><div class="k">cells rendered</div></div>
-    <div class="stat"><div class="v">54</div><div class="k">named cell types</div></div>
-    <div class="stat"><div class="v">120 / 82</div><div class="k">ganglion / amacrine</div></div>
-    <div class="stat"><div class="v">0.22 to 0.68</div><div class="k">direction selectivity index</div></div>
+    <div class="stat"><div class="v">364</div><div class="k">cells rendered</div></div>
+    <div class="stat"><div class="v">83</div><div class="k">named cell types</div></div>
+    <div class="stat"><div class="v">213 / 151</div><div class="k">ganglion / amacrine</div></div>
+    <div class="stat"><div class="v">0.21 to 0.70</div><div class="k">direction selectivity index</div></div>
   </div>
 
   <h2>Ten thousand bipolar cells</h2>
