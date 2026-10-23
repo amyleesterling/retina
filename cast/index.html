@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The cast of the retina</title>
+<meta name="description" content="One proofread cell of each of 117 retinal cell types from Eyewire II, in 3D. Filter by class, open any cell and turn it.">
+<meta property="og:title" content="The cast of the retina">
+<meta property="og:description" content="One proofread cell of each of 117 retinal cell types from Eyewire II, in 3D.">
+<meta property="og:image" content="https://amyleesterling.github.io/retina/media/cast.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<!--
+  Every tile is drawn into ONE fixed canvas with a scissor per tile (one WebGL context for 117
+  cells). The panel's view is drawn into the same canvas, and tiles under the panel are clipped
+  out of it. Grid meshes: ../media/cast/lo (about 3k faces), panel: ../media/cast/hi (at most
+  40k faces), both from D:\Meshes\retina\film_proofread\make_web_cast.py.
+-->
+<style>
+  :root {
+    --ink: #EFF2F7; --dim: #9AA2B1; --faint: #666E7C;
+    --ground: #07080B; --panel: #0F1218; --line: #1D222B; --accent: #3E96F0;
+    --bc: #3f7bff; --hc: #7cffb2; --ac: #45d8ff; --rgc: #f5d142;
+    --pw: 420px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--ground); color: var(--ink);
+    font: 400 16px/1.6 ui-sans-serif, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+  #gl { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; pointer-events: none; z-index: 5; }
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 22px clamp(16px, 4vw, 40px) 80px; transition: padding-right .25s ease; }
+  body.open .wrap { padding-right: calc(var(--pw) + 24px); }
+  .back { color: var(--dim); text-decoration: none; font-size: 14px; }
+  .back:hover { color: var(--ink); }
+  h1 { margin: 14px 0 6px; font-size: clamp(28px, 4.4vw, 42px); font-weight: 400; letter-spacing: -.02em; line-height: 1.1; }
+  .lede { color: var(--dim); max-width: 760px; margin: 0 0 20px; }
+  .lede b { color: var(--ink); font-weight: 500; }
+
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 18px; }
+  .chip { font: inherit; font-size: 14px; color: var(--dim); background: transparent; border: 1px solid var(--line);
+          border-radius: 999px; padding: 6px 13px; cursor: pointer; display: inline-flex; gap: 7px; align-items: center; }
+  .chip i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+  .chip span { color: var(--faint); }
+  .chip:hover { color: var(--ink); border-color: #2c3340; }
+  .chip[aria-pressed="true"] { color: var(--ink); border-color: var(--accent); background: rgba(62,150,240,.10); }
+  .chip[aria-pressed="true"] span { color: var(--dim); }
+  .tools { margin-left: auto; display: flex; gap: 8px; }
+  input[type=search], select { font: inherit; font-size: 14px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+          border-radius: 6px; padding: 6px 10px; }
+  input[type=search] { width: 170px; }
+
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 10px; }
+  .tile { position: relative; border: 1px solid var(--line); border-radius: 6px; cursor: pointer; background: transparent;
+          padding: 0; color: inherit; font: inherit; text-align: center; display: flex; flex-direction: column; }
+  .tile:hover, .tile:focus-visible { border-color: #34404f; outline: none; }
+  .tile.sel { border-color: var(--accent); }
+  .tile .view { aspect-ratio: 1 / 1; width: 100%; position: relative; }
+  .tile .scale { position: absolute; left: 10px; bottom: 6px; display: flex; align-items: center; gap: 6px;
+                 font-size: 11px; color: var(--faint); }
+  .tile .scale b { display: block; height: 2px; background: rgba(255,255,255,.4); }
+  .tile .name { font-size: 14px; line-height: 1.25; padding: 2px 8px 0; }
+  .tile .count { font-size: 12px; color: var(--faint); padding: 0 8px 9px; }
+  .tile .dot { position: absolute; top: 9px; left: 9px; width: 7px; height: 7px; border-radius: 50%; }
+  .empty { color: var(--faint); padding: 30px 0; }
+  .note { color: var(--faint); font-size: 14px; max-width: 760px; margin-top: 28px; }
+
+  #panel { position: fixed; top: 0; right: 0; bottom: 0; width: var(--pw); background: var(--panel); border-left: 1px solid var(--line);
+           z-index: 4; transform: translateX(100%); transition: transform .25s ease; display: flex; flex-direction: column; }
+  body.open #panel { transform: none; }
+  #panel header { padding: 18px 20px 8px; display: flex; align-items: flex-start; gap: 10px; }
+  #panel h2 { margin: 0; font-size: 24px; font-weight: 500; line-height: 1.2; flex: 1; }
+  #panel .cls { font-size: 13px; color: var(--dim); margin-top: 4px; display: flex; gap: 7px; align-items: center; }
+  #panel .cls i { width: 9px; height: 9px; border-radius: 50%; }
+  .iconbtn { background: transparent; border: 1px solid var(--line); color: var(--dim); border-radius: 6px; width: 34px; height: 34px;
+             cursor: pointer; font-size: 18px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+  .iconbtn:hover { color: var(--ink); border-color: #34404f; }
+  #pview { flex: 1; min-height: 240px; position: relative; touch-action: none; cursor: grab; }
+  #pview:active { cursor: grabbing; }
+  #pscale { position: absolute; left: 20px; bottom: 12px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--dim); pointer-events: none; }
+  #pscale b { display: block; height: 2px; background: rgba(255,255,255,.55); }
+  #pload { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--faint); font-size: 13px; pointer-events: none; }
+  #panel .facts { padding: 10px 20px 4px; font-size: 14px; color: var(--dim); }
+  #panel .facts b { color: var(--ink); font-weight: 500; }
+  #panel .root { font-family: ui-monospace, Consolas, monospace; font-size: 12px; color: var(--faint); }
+  #panel .root button { font: inherit; font-size: 12px; background: none; border: 0; color: var(--accent); cursor: pointer; padding: 0 0 0 6px; }
+  #panel footer { padding: 10px 20px 18px; display: flex; gap: 8px; align-items: center; }
+  #panel footer .hint { font-size: 12px; color: var(--faint); margin-left: auto; }
+
+  @media (max-width: 760px) {
+    :root { --pw: 100vw; }
+    body.open .wrap { padding-right: clamp(16px, 4vw, 40px); }
+    #panel { top: auto; left: 0; width: auto; height: 72vh; border-left: 0; border-top: 1px solid var(--line);
+             transform: translateY(100%); border-radius: 12px 12px 0 0; }
+    .tools { margin-left: 0; width: 100%; }
+    input[type=search] { flex: 1; width: auto; }
+    #grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div class="wrap">
+  <a class="back" href="../#cast">&larr; Retina</a>
+  <h1>The cast of the retina</h1>
+  <p class="lede">One proofread cell of each of <b id="nt">117</b> cell types in the Eyewire II retina, reconstructed
+  from electron microscope images of mouse retina. Each tile is drawn at its own scale, given by its bar.
+  Open any cell to turn it and zoom in.</p>
+
+  <div class="bar" role="toolbar" aria-label="Filter by class">
+    <span id="chips"></span>
+    <div class="tools">
+      <input type="search" id="q" placeholder="Find a type" aria-label="Find a type">
+      <select id="sort" aria-label="Sort">
+        <option value="n">Most cells first</option>
+        <option value="az">A to Z</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="grid"></div>
+  <p class="note">Types are the labels people gave these cells in the main proofreading list. A type is here if at
+  least <b>10 proofread cells</b> carry its label. Each example is a cell marked complete whose branches stay inside the
+  volume; 12 more types had no such cell among their first 15 candidates, so they are left out rather than shown cut off.
+  Meshes are simplified for the browser, so the finest branches can look beaded.</p>
+</div>
+
+<aside id="panel" aria-hidden="true" aria-label="Cell detail">
+  <header>
+    <div style="flex:1">
+      <h2 id="ptype"></h2>
+      <div class="cls"><i id="pdot"></i><span id="pcls"></span></div>
+    </div>
+    <button class="iconbtn" id="pclose" aria-label="Close">&times;</button>
+  </header>
+  <div id="pview"><div id="pload">Loading the full cell</div><div id="pscale"><b></b><span></span></div></div>
+  <div class="facts"><b id="pn"></b> proofread cells carry this label.
+    <div class="root">Example cell <span id="proot"></span><button id="pcopy">copy</button></div></div>
+  <footer>
+    <button class="iconbtn" id="pprev" aria-label="Previous type">&lsaquo;</button>
+    <button class="iconbtn" id="pnext" aria-label="Next type">&rsaquo;</button>
+    <span class="hint">Drag to turn, scroll or pinch to zoom</span>
+  </footer>
+</aside>
+
+<script type="importmap">{"imports":{"three":"../vendor/three.module.min.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from '../vendor/loaders/GLTFLoader.js';
+import { OrbitControls } from '../vendor/controls/OrbitControls.js';
+
+const $ = id => document.getElementById(id), fmt = n => n.toLocaleString('en-US');
+const D = await (await fetch('cells.json')).json();
+const CLASSES = [
+  { k: 'BC', name: 'Bipolar', long: 'Bipolar cell', hex: '#3f7bff' },
+  { k: 'HC', name: 'Horizontal', long: 'Horizontal cell', hex: '#7cffb2' },
+  { k: 'AC', name: 'Amacrine', long: 'Amacrine cell', hex: '#45d8ff' },
+  { k: 'RGC', name: 'Ganglion', long: 'Ganglion cell', hex: '#f5d142' },
+];
+const CL = Object.fromEntries(CLASSES.map(c => [c.k, c]));
+const cells = D.cells;
+$('nt').textContent = cells.length;
+
+// ---- 3D: one renderer, one scene, every object hidden except the one being drawn
+const renderer = new THREE.WebGLRenderer({ canvas: $('gl'), antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setClearColor(0x000000, 0);
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.1;
+renderer.autoClear = false; renderer.setScissorTest(true);
+const scene = new THREE.Scene();
+scene.add(new THREE.HemisphereLight(0xdfe8ff, 0x0a1030, 1.0));
+const key = new THREE.DirectionalLight(0xffffff, 1.6); scene.add(key, key.target);
+const rim = new THREE.DirectionalLight(0x8fb5ff, 0.8); scene.add(rim, rim.target);
+const mats = Object.fromEntries(CLASSES.map(c => [c.k, new THREE.MeshStandardMaterial({
+  color: c.hex, roughness: 0.62, metalness: 0, side: THREE.DoubleSide, emissive: c.hex, emissiveIntensity: c.k === 'AC' ? 0.38 : 0.18 })]));
+const loader = new GLTFLoader();
+function loadMesh(url, c) {
+  return new Promise((res, rej) => loader.load(url, gl => {
+    gl.scene.traverse(o => { if (o.isMesh) { o.material = mats[c.class] || mats.AC; o.geometry.computeVertexNormals(); } });
+    gl.scene.scale.set(1, -1, -1); gl.scene.visible = false; scene.add(gl.scene); res(gl.scene);
+  }, undefined, rej));
+}
+const lo = {}, loading = {};
+const EL = 35 * Math.PI / 180;
+const tcam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10000);
+const target = c => new THREE.Vector3(c.soma_um[0], -c.soma_um[1], -c.soma_um[2]);
+const viewDir = az => new THREE.Vector3(Math.cos(EL) * Math.sin(az), -Math.cos(EL) * Math.cos(az), Math.sin(EL));
+function light(cam, tgt, R) {
+  cam.updateMatrixWorld();
+  const right = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 0), up = new THREE.Vector3().setFromMatrixColumn(cam.matrixWorld, 1);
+  const back = new THREE.Vector3().subVectors(tgt, cam.position).normalize();
+  key.position.copy(cam.position).addScaledVector(right, -R * 2).addScaledVector(up, R * 3); key.target.position.copy(tgt);
+  rim.position.copy(tgt).addScaledVector(back, R * 3).addScaledVector(up, R * 2); rim.target.position.copy(tgt);
+}
+// px per um in a square tile of side s px: the film's framing, half width = radius x 1.04
+const tilePxPerUm = (c, s) => s / (2 * c.radius_um * 1.04);
+const niceBar = um => [5, 10, 20, 50, 100, 200, 500].reduce((b, v) => (v <= um * 0.3 ? v : b), 5);
+
+// ---- grid
+const state = { cls: 'all', q: '', sort: 'n' };
+const chipsEl = $('chips');
+const chip = (k, label, hex, n) => `<button class="chip" data-k="${k}" aria-pressed="${state.cls === k}">${hex ? `<i style="background:${hex}"></i>` : ''}${label} <span>${n}</span></button>`;
+chipsEl.innerHTML = chip('all', 'All', '', cells.length) + CLASSES.map(c => chip(c.k, c.name, c.hex, cells.filter(x => x.class === c.k).length)).join('');
+chipsEl.addEventListener('click', e => { const b = e.target.closest('.chip'); if (!b) return; state.cls = b.dataset.k; chipsEl.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', x.dataset.k === state.cls)); build(); });
+$('q').addEventListener('input', e => { state.q = e.target.value.trim().toLowerCase(); build(); });
+$('sort').addEventListener('change', e => { state.sort = e.target.value; build(); });
+
+let shown = [];
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) ensureLo(cells[+e.target.dataset.i]); }), { rootMargin: '400px' });
+function ensureLo(c) {
+  if (lo[c.k] || loading[c.k]) return;
+  loading[c.k] = loadMesh(`../media/cast/lo/${c.k}.glb`, c).then(o => { lo[c.k] = o; });
+}
+function build() {
+  const order = { BC: 0, HC: 1, AC: 2, RGC: 3 };
+  shown = cells.map((c, i) => ({ c, i })).filter(({ c }) => (state.cls === 'all' || c.class === state.cls) && (!state.q || c.type.toLowerCase().includes(state.q)));
+  shown.sort((a, b) => state.sort === 'az' ? a.c.type.localeCompare(b.c.type, 'en', { numeric: true }) : (order[a.c.class] - order[b.c.class]) || (b.c.n_type - a.c.n_type));
+  io.disconnect();
+  $('grid').innerHTML = shown.length ? shown.map(({ c, i }) =>
+    `<button class="tile${sel === c ? ' sel' : ''}" data-i="${i}" aria-label="${c.type}, ${CL[c.class].long.toLowerCase()}, ${fmt(c.n_type)} cells">
+      <div class="view"><span class="dot" style="background:${CL[c.class].hex}"></span><div class="scale"><b></b><span></span></div></div>
+      <div class="name">${c.type}</div><div class="count">${fmt(c.n_type)} cells</div></button>`).join('')
+    : '<div class="empty">No type matches.</div>';
+  document.querySelectorAll('.tile').forEach(t => io.observe(t));
+  sizeBars();
+}
+function sizeBars() {
+  document.querySelectorAll('.tile').forEach(t => {
+    const c = cells[+t.dataset.i], v = t.querySelector('.view'), s = v.clientWidth;
+    const ppu = tilePxPerUm(c, s), bar = niceBar(s / ppu);
+    t.querySelector('.scale b').style.width = `${bar * ppu}px`;
+    t.querySelector('.scale span').innerHTML = `${bar} µm`;
+  });
+}
+$('grid').addEventListener('click', e => { const t = e.target.closest('.tile'); if (t) open(cells[+t.dataset.i]); });
+window.addEventListener('resize', () => { sizeBars(); fitPanel(); });
+
+// ---- panel
+let sel = null, hiObj = null, hiFor = null;
+const pcam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 10000);
+pcam.up.set(0, 0, 1);
+const controls = new OrbitControls(pcam, $('pview'));
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false;
+controls.minZoom = 0.6; controls.maxZoom = 14;
+let interacted = 0;
+controls.addEventListener('start', () => { interacted = performance.now(); });
+function fitPanel() {
+  if (!sel) return;
+  const v = $('pview'), w = v.clientWidth, h = v.clientHeight, R = sel.radius_um * 1.08, a = w / h;
+  pcam.left = -R * Math.max(1, a); pcam.right = R * Math.max(1, a); pcam.top = R * Math.max(1, 1 / a); pcam.bottom = -R * Math.max(1, 1 / a);
+  pcam.near = R * 0.2; pcam.far = R * 12; pcam.updateProjectionMatrix();
+}
+function open(c) {
+  sel = c;
+  document.body.classList.add('open'); $('panel').setAttribute('aria-hidden', 'false');
+  $('ptype').textContent = c.type; $('pcls').textContent = CL[c.class].long; $('pdot').style.background = CL[c.class].hex;
+  $('pn').textContent = fmt(c.n_type); $('proot').textContent = c.root;
+  document.querySelectorAll('.tile').forEach(t => t.classList.toggle('sel', cells[+t.dataset.i] === c));
+  const tgt = target(c), R = c.radius_um;
+  controls.target.copy(tgt); pcam.position.copy(tgt).addScaledVector(viewDir(-0.6), R * 4); pcam.zoom = 1;
+  requestAnimationFrame(fitPanel); fitPanel(); controls.update();
+  if (hiObj) { scene.remove(hiObj); hiObj.traverse(o => o.geometry && o.geometry.dispose()); hiObj = null; }
+  $('pload').style.display = 'flex'; hiFor = c;
+  ensureLo(c);
+  loadMesh(`../media/cast/hi/${c.k}.glb`, c).then(o => {
+    if (hiFor !== c) { scene.remove(o); return; }
+    hiObj = o; $('pload').style.display = 'none';
+  });
+  history.replaceState(null, '', `#${encodeURIComponent(c.type)}`);
+}
+function close() {
+  sel = null; hiFor = null; document.body.classList.remove('open'); $('panel').setAttribute('aria-hidden', 'true');
+  document.querySelectorAll('.tile.sel').forEach(t => t.classList.remove('sel'));
+  history.replaceState(null, '', location.pathname);
+}
+function step(d) {
+  if (!sel || !shown.length) return;
+  const j = shown.findIndex(s => s.c === sel), n = shown.length;
+  const next = shown[((j < 0 ? 0 : j + d) % n + n) % n].c; open(next);
+  document.querySelector(`.tile[data-i="${cells.indexOf(next)}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+$('pclose').onclick = close; $('pprev').onclick = () => step(-1); $('pnext').onclick = () => step(1);
+$('pcopy').onclick = async () => { try { await navigator.clipboard.writeText(sel.root); $('pcopy').textContent = 'copied'; setTimeout(() => $('pcopy').textContent = 'copy', 1200); } catch (e) {} };
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'Escape') close(); else if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1);
+});
+
+// ---- draw
+function drawRect(r, clip) {
+  // r in CSS px (viewport); clip: area tiles may draw into. WebGL counts y from the bottom.
+  const x0 = Math.max(r.left, clip.left), x1 = Math.min(r.right, clip.right), y0 = Math.max(r.top, clip.top), y1 = Math.min(r.bottom, clip.bottom);
+  if (x1 <= x0 || y1 <= y0) return false;
+  const H = innerHeight;
+  renderer.setViewport(r.left, H - r.bottom, r.width, r.height);
+  renderer.setScissor(x0, H - y1, x1 - x0, y1 - y0);
+  return true;
+}
+const t0 = performance.now();
+function frame() {
+  const W = innerWidth, H = innerHeight;
+  if (renderer.domElement.width !== Math.floor(W * renderer.getPixelRatio()) || renderer.domElement.height !== Math.floor(H * renderer.getPixelRatio())) renderer.setSize(W, H, false);
+  renderer.setScissor(0, 0, W, H); renderer.setViewport(0, 0, W, H); renderer.clear();
+  const t = (performance.now() - t0) / 1000;
+  // tiles never draw over the panel
+  const pr = $('panel').getBoundingClientRect(), opened = document.body.classList.contains('open');
+  const clip = { left: 0, top: 0, right: W, bottom: H };
+  if (opened) { if (pr.left > 1) clip.right = Math.min(W, pr.left); else clip.bottom = Math.min(H, pr.top); }
+  document.querySelectorAll('.tile .view').forEach((v, idx) => {
+    const r = v.getBoundingClientRect();
+    if (r.bottom < 0 || r.top > H) return;
+    const i = +v.parentElement.dataset.i, c = cells[i], o = lo[c.k];
+    if (!o || !drawRect(r, clip)) return;
+    const tgt = target(c), R = c.radius_um * 1.04;
+    tcam.left = -R; tcam.right = R; tcam.top = R; tcam.bottom = -R; tcam.near = R * 0.5; tcam.far = R * 8;
+    tcam.up.set(0, 0, 1); tcam.position.copy(tgt).addScaledVector(viewDir(-0.6 + 0.35 * t + i * 0.37), R * 4); tcam.lookAt(tgt);
+    tcam.updateProjectionMatrix(); light(tcam, tgt, R);
+    o.visible = true; renderer.render(scene, tcam); o.visible = false;
+  });
+  if (sel && opened) {
+    const v = $('pview'), r = v.getBoundingClientRect();
+    if (drawRect(r, { left: 0, top: 0, right: W, bottom: H })) {
+      // a slow turn until the reader takes over
+      if (performance.now() - interacted > 6000 && controls.state === -1) {
+        const off = pcam.position.clone().sub(controls.target).applyAxisAngle(new THREE.Vector3(0, 0, 1), 0.004);
+        pcam.position.copy(controls.target).add(off);
+      }
+      controls.update();
+      const o = hiObj || lo[sel.k];
+      if (o) { light(pcam, controls.target, sel.radius_um); o.visible = true; renderer.render(scene, pcam); o.visible = false; }
+      const ppu = r.height / ((pcam.top - pcam.bottom) / pcam.zoom), bar = niceBar(r.width / ppu);
+      $('pscale').querySelector('b').style.width = `${bar * ppu}px`; $('pscale').querySelector('span').innerHTML = `${bar} µm`;
+    }
+  }
+  requestAnimationFrame(frame);
+}
+build();
+const fromHash = decodeURIComponent(location.hash.slice(1));
+if (fromHash) { const c = cells.find(x => x.type === fromHash); if (c) open(c); }
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
