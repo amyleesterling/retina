@@ -509,6 +509,30 @@
   segmentation. Like the bipolar film, this one is a web page captured frame by frame, with
   each cell drawn as a single point rather than a mesh.</div>
 
+  <h2>One dot, one cell</h2>
+  <p>A dot is a stand-in. Behind each one is a whole neuron, branches and all, traced through
+  the electron microscope images. This film goes into one patch of the volume, 70 micrometres
+  across, and lets every dot there become the cell it marks.</p>
+
+  <figure>
+    <div class="holoframe">
+      <span class="hud"><i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i></span>
+      <video src="media/proofread_dive.mp4" poster="media/proofread_dive.jpg"
+             controls playsinline preload="metadata"
+             aria-label="All proofread cells as dots, a push into one patch, where 195 dots turn into the reconstructed cells they mark, then a turn onto the side"></video>
+    </div>
+    <figcaption>All 43,822 dots, then one patch, where <b>195 dots become 195 reconstructed
+    cells</b>: ganglion cells in gold, amacrine cells in light blue, bipolar cells in deep blue.
+    Each cell is drawn whole, so its branches reach well outside the patch. Turned on its side,
+    ganglion cells line one face and bipolar cells the other, with their branches meeting in
+    between. Depth here is true, not stretched.</figcaption>
+  </figure>
+
+  <div class="note">The 195 cells are a sample: every proofread cell whose body lies within
+  35 micrometres of one point. Each mesh is simplified to about <b>25 faces per square
+  micrometre</b> of membrane so the whole patch can be drawn in a browser, which can leave the
+  finest branches looking slightly beaded.</div>
+
   <h2>Sources</h2>
   <p>Reconstruction and cell type labels: the <b>stroeh_mouse_retina</b> dataset on
   <a href="https://eyewire.ai">eyewire.ai</a>, served through CAVE. Light responses and
